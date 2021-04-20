@@ -1,0 +1,11 @@
+/lib/
+/out/
+/.idea/
+/BQNBot.iml
+/hs_err_*.log
+/bqnbot.jar
+/classes
+/mxLogin*
+/mxRoom*
+/BQN
+/BQNb/
