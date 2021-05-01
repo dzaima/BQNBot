@@ -38,7 +38,6 @@ public class MxRoom {
   }
   public Chunk beforeTok(String tok, int am) {
     JSONObject o = s.getJ("_matrix/client/r0/rooms/"+rid+"/messages?limit="+am+"&from="+tok+"&dir=b&access_token="+s.gToken);
-    System.out.println(o.toString(2));
     ArrayList<MxEvent> res = new ArrayList<>();
     if (!o.has("chunk")) return null;
     for (Object c : o.getJSONArray("chunk")) {
@@ -52,5 +51,9 @@ public class MxRoom {
   @Deprecated
   public JSONObject messagesSince(String since, int timeout) {
     return s.messagesSince(since, timeout);
+  }
+  
+  public void readTo(String id) {
+    System.out.println(s.post("_matrix/client/r0/rooms/"+rid+"/receipt/m.read/"+id+"?access_token="+s.gToken, "{}"));
   }
 }

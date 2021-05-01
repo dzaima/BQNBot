@@ -62,7 +62,7 @@ public class Main {
           String mxId = mxE.o.getString("redacts");
           if (msgs.containsKey(mxId)) me.deleteMessage(mxE.r, msgs.get(mxId));
         }
-      } else {
+      } else if (!mxE.uid.equals(me.uid)) {
         MxMessage msg = mxE.m;
         String body = Jsoup.parse(msg.fmt.html).wholeText();
         if (body.length()<5) continue;
