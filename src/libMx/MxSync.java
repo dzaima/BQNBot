@@ -24,10 +24,13 @@ public class MxSync {
   }
   
   void update(JSONObject upd) {
-    JSONObject rs = upd.getJSONObject("rooms").getJSONObject("join");
-    for (String rid : rs.keySet()) {
+    JSONObject rooms = upd.optJSONObject("rooms");
+    if (rooms==null) return;
+    JSONObject join = rooms.optJSONObject("join");
+    if (join==null) return;
+    for (String rid : join.keySet()) {
       MxRoom r = s.room(rid);
-      JSONObject info = rs.optJSONObject(rid);
+      JSONObject info = join.optJSONObject(rid);
       if (info!=null) {
         for (Object evo : info.getJSONObject("timeline").getJSONArray("events")) {
           recv.add(new MxEvent(r, (JSONObject) evo));
