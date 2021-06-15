@@ -6,6 +6,7 @@ import BQN.tools.FmtInfo;
 import BQN.types.Value;
 import libMx.*;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.*;
 
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -43,6 +44,18 @@ public class Main {
     }
   }
   
+  static void readMsg(StringBuilder r, Node n) {
+    if (n instanceof TextNode) {
+      r.append(((TextNode) n).getWholeText());
+    } else if (n instanceof Element && ((Element) n).tagName().equals("br")) {
+      r.append('\n');
+    } else {
+      for (Node c : n.childNodes()) {
+        readMsg(r, c);
+      }
+    }
+  }
+  
   public static void main(String[] args) {
     if (!BQN.Main.SAFE) throw new RuntimeException("dzaima/BQN wasn't built with safe mode!");
   
@@ -53,7 +66,6 @@ public class Main {
     mxSync.start();
     
     
-    MxServer.LOG = false; // boring & pointless logs
     HashMap<String, String> msgs = new HashMap<>();
     while (true) {
       MxEvent mxE = mxSync.next();
@@ -64,7 +76,9 @@ public class Main {
         }
       } else if (!mxE.uid.equals(me.uid)) {
         MxMessage msg = mxE.m;
-        String body = Jsoup.parse(msg.fmt.html).wholeText();
+        StringBuilder b = new StringBuilder();
+        readMsg(b, Jsoup.parse(msg.fmt.html));
+        String body = b.toString();
         if (body.length()<5) continue;
         boolean pretty = body.substring(0, 4).equalsIgnoreCase("BQN)") || body.substring(0, 4).equalsIgnoreCase(")BQN");
         if (pretty || body.substring(0, 5).equalsIgnoreCase("BQNr)") || body.substring(0, 5).equalsIgnoreCase(")BQNr")) {

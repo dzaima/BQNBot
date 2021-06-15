@@ -48,14 +48,19 @@ public class MxSync {
       MxServer.log("Sync started");
       String batch = stoppedBatchToken;
       stoppedBatchToken = null;
+      int failTime = 1;
       while (running.get()) {
         try {
           JSONObject c = s.messagesSince(batch, 30000);
           update(c);
           batch = c.getString("next_batch");
+          failTime = 1;
         } catch (Throwable t) {
-          MxServer.log("Failed to update:");
+          failTime = Math.min(2*failTime, 180);
+          MxServer.warn("Failed to update:");
           t.printStackTrace();
+          MxServer.warn("Retrying in "+(failTime)+"s");
+          Tools.sleep(failTime*1000);
         }
         Tools.sleep(100);
       }

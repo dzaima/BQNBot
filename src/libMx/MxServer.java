@@ -91,44 +91,50 @@ public class MxServer {
     }
   }
   public JSONObject getJ(String path) {
-    log("GET", path, null);
+    int failTime = 1;
     while (true) {
-      String got = get(path);
+      String got = getRaw(path);
       JSONObject r = parseJSONObject(got);
-      if (!"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
       log("mxq", "retrying..");
       if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(1000);
+      else Tools.sleep(failTime);
+      failTime = Math.min(failTime*2, 180);
     }
   }
   public JSONObject postJ(String path, String data) {
-    log("POST", path, data);
+    int failTime = 1;
     while (true) {
-      JSONObject r = parseJSONObject(post(path, data));
-      if (!"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+      JSONObject r = parseJSONObject(postRaw(path, data));
+      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
       log("mxq", "retrying..");
       if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(1000);
+      else Tools.sleep(failTime);
+      failTime = Math.min(failTime*2, 180);
     }
   }
   public JSONObject putJ(String path, String data) {
-    log("PUT", path, data);
+    int failTime = 1;
     while (true) {
-      JSONObject r = parseJSONObject(put(path, data));
-      if (!"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+      JSONObject r = parseJSONObject(putRaw(path, data));
+      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
       log("mxq", "retrying..");
       if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(1000);
+      else Tools.sleep(failTime);
+      failTime = Math.min(failTime*2, 180);
     }
   }
-  public String get(String path) {
-    return Tools.get(url+"/"+path);
-  }
-  public String post(String path, String data) {
+  public String postRaw(String path, String data) {
+    log("POST", path, data);
     return Tools.post(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
-  public String put(String path, String data) {
-    return Tools.put (url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
+  public String getRaw(String path) {
+    log("GET", path, null);
+    return Tools.get(url+"/"+path);
+  }
+  public String putRaw(String path, String data) {
+    log("PUT", path, data);
+    return Tools.put(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
   
   public byte[] getB(String path) {
@@ -196,12 +202,13 @@ public class MxServer {
   public static void log(String s) {
     log("mx", s);
   }
-  private static void log(String method, String uri, String data) {
+  private void log(String method, String uri, String data) {
     if (uri.startsWith("/")) System.err.println("!!!!!!!!!!!!! STARTING SLASH !!!!!!!!!!!!!");
     String df = data==null? "" : " "+(data.length()>100? "..." : data);
-    if (!uri.contains("_matrix/client/r0/sync?")) { // don't log sync spam
-      log("mxq", method+" "+uri.replaceAll("access_token=[^&]+", "access_token=<redacted>")+df);
-    }
+    log("mxq", method+" "+url+"/"+uri.replaceAll("access_token=[^&]+", "access_token=<redacted>")+df);
+    // if (!uri.contains("_matrix/client/r0/sync?")) { // don't log sync spam
+    //   log("mxq", method+" "+uri.replaceAll("access_token=[^&]+", "access_token=<redacted>")+df);
+    // }
   }
   
   public boolean handleError(JSONObject j, String do_what) {
