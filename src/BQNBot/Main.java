@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.*;
 @SuppressWarnings("deprecation") // thread.stop is the only way to do this
 public class Main {
   public static String pathLogin = "mxLogin";
-  public static int TIMEOUT = 1000; // ms per message
+  public static int TIMEOUT = 5000; // ms per message
   public static int MAXLEN = 5000;  // chars
   public static int MAXW = 100; // max char count in line
   public static int MAXSW = 300; // max char count in single-line mode
@@ -65,7 +65,7 @@ public class Main {
     MxSync mxSync = new MxSync(s, s.latestBatch());
     mxSync.start();
     
-    
+    BQN.Main.exec("2+2", new SSys().gsc, null); // help with cold start
     HashMap<String, String> msgs = new HashMap<>();
     while (true) {
       MxEvent mxE = mxSync.next();
@@ -83,7 +83,7 @@ public class Main {
         boolean pretty = body.substring(0, 4).equalsIgnoreCase("BQN)") || body.substring(0, 4).equalsIgnoreCase(")BQN");
         if (pretty || body.substring(0, 5).equalsIgnoreCase("BQNr)") || body.substring(0, 5).equalsIgnoreCase(")BQNr")) {
           String src = body.substring(pretty? 4 : 5);
-          System.out.println("Executing: ```");
+          MxServer.log("BONBot", "Executing: ```");
           System.out.println(src);
           System.out.println("```");
           AtomicBoolean multiline = new AtomicBoolean(false);
@@ -135,6 +135,7 @@ public class Main {
             }
             Tools.sleep(20);
           }
+          MxServer.log("BQNBot", "evaluated");
           if (ri.length() > MAXLEN) ri = ri.substring(0, MAXLEN);
           MxFmt f = new MxFmt();
           // f.reply(properID);
