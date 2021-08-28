@@ -51,7 +51,7 @@ public class MxSync {
       int failTime = 1;
       while (running.get()) {
         try {
-          JSONObject c = s.messagesSince(batch, 30000);
+          JSONObject c = s.messagesSince(batch, MxServer.SYNC_TIMEOUT);
           update(c);
           batch = c.getString("next_batch");
           failTime = 1;

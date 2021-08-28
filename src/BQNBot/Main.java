@@ -31,7 +31,7 @@ public class Main {
     for (int i = 0; i < rb.length(); i++) {
       lnw++;
       if (isNL(rb.charAt(i))) { lnc++; lnw = 0; }
-      if (lnw<=MAXW) b.append(rb.charAt(i));
+      if (lnw<MAXW) b.append(rb.charAt(i));
       if (lnw==MAXW) b.append('…');
       if (lnc>MAXH) { b.append('…'); break; }
     }
@@ -74,7 +74,7 @@ public class Main {
           String mxId = mxE.o.getString("redacts");
           if (msgs.containsKey(mxId)) me.deleteMessage(mxE.r, msgs.get(mxId));
         }
-      } else if (!mxE.uid.equals(me.uid)) {
+      } else if (!mxE.uid.equals(me.uid) && !mxE.m.type.equals("m.notice")) {
         MxMessage msg = mxE.m;
         StringBuilder b = new StringBuilder();
         readMsg(b, Jsoup.parse(msg.fmt.html));

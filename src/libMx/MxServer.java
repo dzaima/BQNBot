@@ -14,6 +14,7 @@ password
 (token or end of file)
  */
 public class MxServer {
+  public static int SYNC_TIMEOUT = 85000;
   public final String url;
   public String gToken;
   public MxLogin primaryLogin;
@@ -138,6 +139,7 @@ public class MxServer {
   }
   
   public byte[] getB(String path) {
+    log("GET bytes", path, null);
     return Tools.getB(url+"/"+path);
   }
   

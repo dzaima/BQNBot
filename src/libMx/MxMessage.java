@@ -15,10 +15,10 @@ public final class MxMessage {
   
   public final String id;
   public final String uid;
-  public final String editsId;
+  public final String editsId; // null if none
   public final int edit; // 0 - not edited; 1 - informing about edit; 2 - full edited message
   public final MxFmted fmt;
-  public final String replyId;
+  public final String replyId; // null if none
   public MxMessage(MxRoom r, JSONObject o) { // TODO do sane things for evil inputs
     this.r = r;
     this.o = o;
