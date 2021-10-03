@@ -54,6 +54,6 @@ public class MxRoom {
   }
   
   public void readTo(String id) {
-    System.out.println(s.postRaw("_matrix/client/r0/rooms/"+rid+"/receipt/m.read/"+id+"?access_token="+s.gToken, "{}"));
+    s.postJ("_matrix/client/r0/rooms/"+rid+"/receipt/m.read/"+id+"?access_token="+s.gToken, "{}");
   }
 }

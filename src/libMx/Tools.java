@@ -10,6 +10,7 @@ import java.util.*;
 
 public class Tools {
   public static final Object qnull = null;
+  public static int globalTimeout = 1000*60*10; // timeout of all requests; default is 10 minutes
   
   public static String toJSON(String str) {
     return JSONObject.quote(str);
@@ -62,6 +63,7 @@ public class Tools {
     try {
       URL u = new URL(path);
       HttpURLConnection c = (HttpURLConnection) u.openConnection();
+      c.setConnectTimeout(globalTimeout);
       c.setRequestMethod(method);
       c.setUseCaches(false);
       c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -85,6 +87,7 @@ public class Tools {
     try {
       URL u = new URL(path);
       HttpURLConnection c = (HttpURLConnection) u.openConnection();
+      c.setConnectTimeout(globalTimeout);
       c.setRequestMethod("GET");
       c.setUseCaches(false);
       
@@ -99,6 +102,7 @@ public class Tools {
     try {
       URL u = new URL(path);
       HttpURLConnection c = (HttpURLConnection) u.openConnection();
+      c.setConnectTimeout(globalTimeout);
       c.setRequestMethod("GET");
       c.setUseCaches(false);
       

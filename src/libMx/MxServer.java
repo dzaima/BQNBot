@@ -3,6 +3,7 @@ package libMx;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDateTime;
@@ -92,40 +93,49 @@ public class MxServer {
     }
   }
   public JSONObject getJ(String path) {
-    int failTime = 1;
+    int failTime = 500;
     while (true) {
-      String got = getRaw(path);
-      JSONObject r = parseJSONObject(got);
-      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+      int retryTime = failTime;
+      try {
+        JSONObject r = parseJSONObject(getRaw(path)); // TODO catch parse error and try to parse out an HTML error code and throw a custom exception on all parseJSONObject
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+        
+        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+      } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "retrying..");
-      if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(failTime);
-      failTime = Math.min(failTime*2, 180);
+      failTime = Math.max(failTime*2, 500);
     }
   }
   public JSONObject postJ(String path, String data) {
-    int failTime = 1;
+    int failTime = 500;
     while (true) {
-      JSONObject r = parseJSONObject(postRaw(path, data));
-      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+      int retryTime = failTime;
+      try {
+        JSONObject r = parseJSONObject(postRaw(path, data));
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+        
+        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+      } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "retrying..");
-      if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(failTime);
-      failTime = Math.min(failTime*2, 180);
+      Tools.sleep(retryTime);
+      failTime = Math.max(failTime*2, 500);
     }
   }
   public JSONObject putJ(String path, String data) {
-    int failTime = 1;
+    int failTime = 500;
     while (true) {
-      JSONObject r = parseJSONObject(putRaw(path, data));
-      if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
-      log("mxq", "retrying..");
-      if (r.has("retry_after_ms")) Tools.sleep(r.getInt("retry_after_ms")+100);
-      else Tools.sleep(failTime);
-      failTime = Math.min(failTime*2, 180);
+      int retryTime = failTime;
+      try {
+        JSONObject r = parseJSONObject(putRaw(path, data));
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
+        
+        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+      } catch (RuntimeException e) { e.printStackTrace(); }
+      log("mxq", "retrying..");      Tools.sleep(retryTime);
+      failTime = Math.max(failTime*2, 500);
     }
   }
-  public String postRaw(String path, String data) {
+  private String postRaw(String path, String data) {
     log("POST", path, data);
     return Tools.post(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
@@ -141,6 +151,15 @@ public class MxServer {
   public byte[] getB(String path) {
     log("GET bytes", path, null);
     return Tools.getB(url+"/"+path);
+  }
+  private HashMap<String, byte[]> getBCache;
+  public byte[] getBCached(String path) {
+    if (getBCache==null) getBCache = new HashMap<>();
+    byte[] prev = getBCache.get(path);
+    if (prev!=null) return prev;
+    byte[] curr = getB(path);
+    getBCache.put(path, curr);
+    return curr;
   }
   
   private final HashMap<String, MxRoom> rooms = new HashMap<>();
