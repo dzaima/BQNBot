@@ -103,7 +103,8 @@ public class MxServer {
         if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
       } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "retrying..");
-      failTime = Math.max(failTime*2, 500);
+      Tools.sleep(retryTime);
+      failTime = Math.min(Math.max(failTime*2, 500), 50000);
     }
   }
   public JSONObject postJ(String path, String data) {
@@ -118,7 +119,7 @@ public class MxServer {
       } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "retrying..");
       Tools.sleep(retryTime);
-      failTime = Math.max(failTime*2, 500);
+      failTime = Math.min(Math.max(failTime*2, 500), 50000);
     }
   }
   public JSONObject putJ(String path, String data) {
@@ -131,8 +132,9 @@ public class MxServer {
         
         if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
       } catch (RuntimeException e) { e.printStackTrace(); }
-      log("mxq", "retrying..");      Tools.sleep(retryTime);
-      failTime = Math.max(failTime*2, 500);
+      log("mxq", "retrying..");
+      Tools.sleep(retryTime);
+      failTime = Math.min(Math.max(failTime*2, 500), 50000);
     }
   }
   private String postRaw(String path, String data) {
