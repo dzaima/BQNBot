@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mkdir -p lib
 if [ ! -d BQN ]; then
   echo "Clone or symlink dzaima/BQN in base directory!"; exit

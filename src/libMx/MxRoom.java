@@ -36,13 +36,15 @@ public class MxRoom {
   
     public Chunk(ArrayList<MxEvent> events, String sTok, String eTok) { this.events = events; this.sTok = sTok; this.eTok = eTok; }
   }
-  public Chunk beforeTok(String tok, int am) {
-    JSONObject o = s.getJ("_matrix/client/r0/rooms/"+rid+"/messages?limit="+am+"&from="+tok+"&dir=b&access_token="+s.gToken);
+  public Chunk beforeTok(String from, int am) {
+    return beforeTok(from, null, am);
+  }
+  public Chunk beforeTok(String from, String to, int am) {
+    JSONObject o = s.getJ("_matrix/client/r0/rooms/"+rid+"/messages?limit="+am+"&from="+from+(to==null?"":"&to="+to)+"&dir=b&access_token="+s.gToken);
     ArrayList<MxEvent> res = new ArrayList<>();
     if (!o.has("chunk")) return null;
     for (Object c : o.getJSONArray("chunk")) {
-      JSONObject jo = (JSONObject) c;
-      res.add(new MxEvent(this, jo));
+      res.add(new MxEvent(this, (JSONObject) c));
     }
     Collections.reverse(res);
     return new Chunk(res, o.getString("start"), o.getString("end"));

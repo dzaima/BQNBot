@@ -2,18 +2,11 @@ package libMx;
 
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.time.LocalDateTime;
-import java.util.*;
-/*
-https://example.org
-@username:example.org
-password
-(token or end of file)
- */
+import java.util.HashMap;
+
+
 public class MxServer {
   public static int SYNC_TIMEOUT = 85000;
   public final String url;
@@ -25,7 +18,7 @@ public class MxServer {
     setG(new MxLogin(this, id, gToken));
   }
   
-  MxServer(String url) {
+  private MxServer(String url) {
     this.url = url;
   }
   
@@ -34,37 +27,25 @@ public class MxServer {
     primaryLogin = l;
   }
   
-  public static MxServer of(Path loginInfo) {
-    try {
-      List<String> lns = Files.readAllLines(loginInfo);
-      MxServer s = new MxServer(lns.get(0));
-      MxLogin l = s.login(loginInfo, lns);
+  public static MxServer of(MxLoginMgr mgr) {
+      MxServer s = new MxServer(mgr.getServer());
+      MxLogin l = s.login(mgr);
       if (l==null) return (MxServer) Tools.qnull;
       s.setG(l);
       return s;
-    } catch (IOException e) {
-      System.err.println("Failed to read login info file "+loginInfo.toAbsolutePath()+":"); e.printStackTrace(); System.exit(1); return null;
-    }
   }
   
-  public MxLogin login(Path loginInfo) {
-    try {
-      List<String> lns = Files.readAllLines(loginInfo);
-      return login(loginInfo, lns);
-    } catch (IOException e) {
-      System.err.println("Failed to read login info file"+loginInfo.toAbsolutePath()+":"); e.printStackTrace(); System.exit(1); return null;
-    }
-  }
-  public MxLogin login(Path loginInfo, List<String> lns) {
-    if (lns.size()>=4) {
-      MxLogin l = new MxLogin(this, lns.get(1), lns.get(3));
+  public MxLogin login(MxLoginMgr mgr) {
+    String token = mgr.getToken();
+    if (token!=null) {
+      MxLogin l = new MxLogin(this, mgr.getUserID(), mgr.getToken());
       if (l.valid()) return l;
     }
     
-    MxLogin l = login(lns.get(1), lns.get(2));
+    MxLogin l = login(mgr.getUserID(), mgr.getPassword());
     if (l==null) return null;
     
-    Tools.write(loginInfo, lns.get(0)+"\n"+lns.get(1)+"\n"+lns.get(2)+"\n"+l.token);
+    mgr.updateToken(l.token);
     return l;
   }
   public MxLogin login(String uid, String passwd) {
@@ -93,48 +74,48 @@ public class MxServer {
     }
   }
   public JSONObject getJ(String path) {
-    int failTime = 500;
+    int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
         JSONObject r = parseJSONObject(getRaw(path)); // TODO catch parse error and try to parse out an HTML error code and throw a custom exception on all parseJSONObject
         if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
         
-        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
-      log("mxq", "retrying..");
-      Tools.sleep(retryTime);
-      failTime = Math.min(Math.max(failTime*2, 500), 50000);
+      log("mxq", "Retrying in "+retryTime+"s");
+      Tools.sleep(retryTime*1000);
+      failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
   public JSONObject postJ(String path, String data) {
-    int failTime = 500;
+    int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
         JSONObject r = parseJSONObject(postRaw(path, data));
         if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
         
-        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
-      log("mxq", "retrying..");
-      Tools.sleep(retryTime);
-      failTime = Math.min(Math.max(failTime*2, 500), 50000);
+      log("mxq", "Retrying in "+retryTime+"s");
+      Tools.sleep(retryTime*1000);
+      failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
   public JSONObject putJ(String path, String data) {
-    int failTime = 500;
+    int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
         JSONObject r = parseJSONObject(putRaw(path, data));
         if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
         
-        if (r.has("retry_after_ms")) retryTime = r.getInt("retry_after_ms")+100;
+        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
-      log("mxq", "retrying..");
-      Tools.sleep(retryTime);
-      failTime = Math.min(Math.max(failTime*2, 500), 50000);
+      log("mxq", "Retrying in "+retryTime+"s");
+      Tools.sleep(retryTime*1000);
+      failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
   private String postRaw(String path, String data) {
@@ -179,9 +160,11 @@ public class MxServer {
   }
   
   
-  
+  public JSONObject sync(int count) {
+    return getJ("_matrix/client/r0/sync?filter={\"room\":{\"timeline\":{\"limit\":"+count+"}}}&access_token="+gToken);
+  }
   public String latestBatch() {
-    return getJ("_matrix/client/r0/sync?filter={\"room\":{\"timeline\":{\"limit\":1}}}&access_token="+gToken).getString("next_batch");
+    return sync(1).getString("next_batch");
   }
   
   public MxLogin register(String id, String device, String passwd) {

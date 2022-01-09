@@ -1,1 +1,2 @@
-java -Xmx512M -ea -cp 'bqnbot.jar:lib/*' BQNBot.Main
+#!/usr/bin/env bash
+java -Xmx512M -ea -cp 'bqnbot.jar:lib/*' BQNBot.Main $@
