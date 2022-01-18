@@ -1,8 +1,8 @@
 package libMx;
 
-import org.json.JSONObject;
-
 import java.util.*;
+
+import static dzaima.utils.JSON.Obj;
 
 public class MxRoom {
   public final MxServer s;
@@ -19,12 +19,11 @@ public class MxRoom {
   }
   
   public ArrayList<MxEvent> beforeMsg(String id, int am) {
-    JSONObject o = s.getJ("_matrix/client/r0/rooms/"+rid+"/context/"+id+"?limit="+am+"&access_token="+s.gToken);
+    Obj o = s.getJ("_matrix/client/r0/rooms/"+rid+"/context/"+id+"?limit="+am+"&access_token="+s.gToken);
     ArrayList<MxEvent> res = new ArrayList<>();
     if (!o.has("events_before")) return null;
-    for (Object c : o.getJSONArray("events_before")) {
-      JSONObject jo = (JSONObject) c;
-      res.add(new MxEvent(this, jo));
+    for (Obj c : o.arr("events_before").objs()) {
+      res.add(new MxEvent(this, c));
     }
     Collections.reverse(res);
     return res;
@@ -40,18 +39,18 @@ public class MxRoom {
     return beforeTok(from, null, am);
   }
   public Chunk beforeTok(String from, String to, int am) {
-    JSONObject o = s.getJ("_matrix/client/r0/rooms/"+rid+"/messages?limit="+am+"&from="+from+(to==null?"":"&to="+to)+"&dir=b&access_token="+s.gToken);
+    Obj o = s.getJ("_matrix/client/r0/rooms/"+rid+"/messages?limit="+am+"&from="+from+(to==null?"":"&to="+to)+"&dir=b&access_token="+s.gToken);
     ArrayList<MxEvent> res = new ArrayList<>();
     if (!o.has("chunk")) return null;
-    for (Object c : o.getJSONArray("chunk")) {
-      res.add(new MxEvent(this, (JSONObject) c));
+    for (Obj c : o.arr("chunk").objs()) {
+      res.add(new MxEvent(this, c));
     }
     Collections.reverse(res);
-    return new Chunk(res, o.getString("start"), o.getString("end"));
+    return new Chunk(res, o.str("start"), o.str("end"));
   }
   
   @Deprecated
-  public JSONObject messagesSince(String since, int timeout) {
+  public Obj messagesSince(String since, int timeout) {
     return s.messagesSince(since, timeout);
   }
   

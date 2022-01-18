@@ -1,6 +1,7 @@
 package libMx;
 
-import org.json.JSONObject;
+import dzaima.utils.JSON;
+import dzaima.utils.JSON.Obj;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ public class MxServer {
   public static MxServer of(MxLoginMgr mgr) {
       MxServer s = new MxServer(mgr.getServer());
       MxLogin l = s.login(mgr);
-      if (l==null) return (MxServer) Tools.qnull;
+      if (l==null) return (MxServer) Utils.qnull;
       s.setG(l);
       return s;
   }
@@ -49,22 +50,22 @@ public class MxServer {
     return l;
   }
   public MxLogin login(String uid, String passwd) {
-    JSONObject j = postJ("_matrix/client/r0/login",
+    Obj j = postJ("_matrix/client/r0/login",
       "{" +
-        "\"user\":"+Tools.toJSON(uid)+"," +
-        "\"password\":"+Tools.toJSON(passwd)+"," +
+        "\"user\":"+Utils.toJSON(uid)+"," +
+        "\"password\":"+Utils.toJSON(passwd)+"," +
         "\"type\":\"m.login.password\"" +
         "}");
     if (j.has("errcode")) {
       warn("failed to log in");
       return null;
     }
-    return new MxLogin(this, uid, j.getString("access_token"));
+    return new MxLogin(this, uid, j.str("access_token"));
   }
   
-  public static JSONObject parseJSONObject(String s) {
+  public static Obj parseObj(String s) {
     try {
-      return new JSONObject(s);
+      return JSON.parseObj(s);
     } catch (Throwable e) {
       System.err.println("Failed parsing JSON: ```");
       System.err.println(s);
@@ -73,67 +74,64 @@ public class MxServer {
       return null;
     }
   }
-  public JSONObject getJ(String path) {
+  public Obj getJ(String path) {
     int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
-        JSONObject r = parseJSONObject(getRaw(path)); // TODO catch parse error and try to parse out an HTML error code and throw a custom exception on all parseJSONObject
-        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
-        
-        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
+        Obj r = parseObj(getRaw(path)); // TODO catch parse error and try to parse out an HTML error code and throw a custom exception on all parseObj
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.str("errcode", null))) return r;
+        if (r!=null && r.hasNum("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "Retrying in "+retryTime+"s");
-      Tools.sleep(retryTime*1000);
+      Utils.sleep(retryTime*1000);
       failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
-  public JSONObject postJ(String path, String data) {
+  public Obj postJ(String path, String data) {
     int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
-        JSONObject r = parseJSONObject(postRaw(path, data));
-        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
-        
-        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
+        Obj r = parseObj(postRaw(path, data));
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.str("errcode", null))) return r;
+        if (r!=null && r.hasNum("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "Retrying in "+retryTime+"s");
-      Tools.sleep(retryTime*1000);
+      Utils.sleep(retryTime*1000);
       failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
-  public JSONObject putJ(String path, String data) {
+  public Obj putJ(String path, String data) {
     int failTime = 1;
     while (true) {
       int retryTime = failTime;
       try {
-        JSONObject r = parseJSONObject(putRaw(path, data));
-        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.optString("errcode"))) return r;
-        
-        if (r.has("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
+        Obj r = parseObj(putRaw(path, data));
+        if (r!=null && !"M_LIMIT_EXCEEDED".equals(r.str("errcode", null))) return r;
+        if (r!=null && r.hasNum("retry_after_ms")) retryTime = Math.max(failTime, r.getInt("retry_after_ms")/1000 + 2);
       } catch (RuntimeException e) { e.printStackTrace(); }
       log("mxq", "Retrying in "+retryTime+"s");
-      Tools.sleep(retryTime*1000);
+      Utils.sleep(retryTime*1000);
       failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
   private String postRaw(String path, String data) {
     log("POST", path, data);
-    return Tools.post(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
+    return Utils.post(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
   public String getRaw(String path) {
     log("GET", path, null);
-    return Tools.get(url+"/"+path);
+    return Utils.get(url+"/"+path);
   }
   public String putRaw(String path, String data) {
     log("PUT", path, data);
-    return Tools.put(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
+    return Utils.put(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
   
   public byte[] getB(String path) {
     log("GET bytes", path, null);
-    return Tools.getB(url+"/"+path);
+    return Utils.getB(url+"/"+path);
   }
   private HashMap<String, byte[]> getBCache;
   public byte[] getBCached(String path) {
@@ -160,11 +158,11 @@ public class MxServer {
   }
   
   
-  public JSONObject sync(int count) {
+  public Obj sync(int count) {
     return getJ("_matrix/client/r0/sync?filter={\"room\":{\"timeline\":{\"limit\":"+count+"}}}&access_token="+gToken);
   }
   public String latestBatch() {
-    return sync(1).getString("next_batch");
+    return sync(1).str("next_batch");
   }
   
   public MxLogin register(String id, String device, String passwd) {
@@ -174,28 +172,28 @@ public class MxServer {
     int i = 0;
     while (true) {
       String cid = i==0? id : id+i;
-      JSONObject j = postJ("_matrix/client/r0/register?kind=user",
+      Obj j = postJ("_matrix/client/r0/register?kind=user",
         "{" +
-          "\"username\":" +Tools.toJSON(cid   )+"," +
-          "\"password\":" +Tools.toJSON(passwd)+"," +
-          "\"device_id\":"+Tools.toJSON(device)+"," +
+          "\"username\":" +Utils.toJSON(cid   )+"," +
+          "\"password\":" +Utils.toJSON(passwd)+"," +
+          "\"device_id\":"+Utils.toJSON(device)+"," +
           "\"auth\": {\"type\":\"m.login.dummy\"}" +
         "}");
       log("register: "+j.toString());
-      String err = j.optString("errcode", null);
+      String err = j.str("errcode", null);
       if ("M_USER_IN_USE".equals(err)) {
         if (i>20) return null;
         i++;
-        Tools.sleep(100);
+        Utils.sleep(100);
         continue;
       }
       if (handleError(j, "register")) return null;
-      return new MxLogin(this, j.getString("user_id"), j.getString("access_token"));
+      return new MxLogin(this, j.str("user_id"), j.str("access_token"));
     }
   }
   
   
-  public JSONObject messagesSince(String since, int timeout) {
+  public Obj messagesSince(String since, int timeout) {
     return getJ("_matrix/client/r0/sync?since="+since+"&timeout="+timeout+"&access_token="+gToken);
   }
   
@@ -217,7 +215,7 @@ public class MxServer {
     // }
   }
   
-  public boolean handleError(JSONObject j, String do_what) {
+  public boolean handleError(Obj j, String do_what) {
     if (!j.has("errcode")) return false;
     warn("Failed to "+do_what+": "+j.toString());
     return true;

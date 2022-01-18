@@ -67,7 +67,7 @@ public class Main {
       MxEvent mxE = mxSync.next();
       if (mxE.m==null) {
         if (mxE.type.equals("m.room.redaction")) {
-          String mxId = mxE.o.getString("redacts");
+          String mxId = mxE.o.str("redacts");
           if (msgs.containsKey(mxId)) me.deleteMessage(mxE.r, msgs.get(mxId));
         }
       } else if (!mxE.uid.equals(me.uid) && !mxE.m.type.equals("m.notice")) {
@@ -88,7 +88,7 @@ public class Main {
     AtomicBoolean done = new AtomicBoolean(false);
     AtomicReference<String> resCode = new AtomicReference<>("");
     AtomicReference<String> resInfo = new AtomicReference<>("");
-    Thread t = Tools.thread(() -> {
+    Thread t = Utils.thread(() -> {
       try {
         SSys sys = new SSys();
         try {
@@ -131,7 +131,7 @@ public class Main {
         ri = "Expression took too long";
         break;
       }
-      Tools.sleep(20);
+      Utils.sleep(20);
     }
     MxServer.log("BQNBot", "evaluated");
     if (ri.length() > MAXLEN) ri = ri.substring(0, MAXLEN);
@@ -141,7 +141,7 @@ public class Main {
     MxMessage msg = currentEvent.m;
     String nick = getUser(msg.uid).name();
     f.body.append(nick).append(':');
-    f.html.append("<a href=\"https://matrix.to/#/").append(Tools.toHTML(msg.uid)).append("\">").append(Tools.toHTML(nick)).append("</a>");
+    f.html.append("<a href=\"https://matrix.to/#/").append(Utils.toHTML(msg.uid)).append("\">").append(Utils.toHTML(nick)).append("</a>");
     if (rc.length()>0) {
       if (multiline.get()) {
         f.mc(rc, "bqn");
@@ -152,7 +152,7 @@ public class Main {
       }
     } else if (ri.length()>0) f.txt(" ");
     if (ri.length()>0) f.txt(ri);
-    if (rc.isEmpty() && ri.isEmpty()) f.txt("(no output)");
+    if (rc.isEmpty() && ri.isEmpty()) f.txt(" (no output)");
     
     if (msg.editsId!=null && msgs.containsKey(msg.editsId)) {
       me.editMessage(currentEvent.r, msgs.get(msg.editsId), f);

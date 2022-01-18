@@ -41,7 +41,7 @@ public abstract class MxLoginMgr {
     
     public void updateToken(String token) {
       lns.set(3, token);
-      Tools.write(path, lns.get(0)+"\n"+lns.get(1)+"\n"+lns.get(2)+"\n"+token);
+      Utils.write(path, lns.get(0)+"\n"+lns.get(1)+"\n"+lns.get(2)+"\n"+token);
     }
   }
 }

@@ -21,19 +21,19 @@ public class MxFmt {
   
   public void txt(String text) {
     body.append(text);
-    html.append(Tools.toHTML(text));
+    html.append(Utils.toHTML(text));
   }
   public void i(String text) {
     body.append("_").append(text).append("_");
-    html.append("<em>").append(Tools.toHTML(text)).append("</em>");
+    html.append("<em>").append(Utils.toHTML(text)).append("</em>");
   }
   public void b(String text) {
     body.append("**").append(text).append("**");
-    html.append("<strong>").append(Tools.toHTML(text)).append("</strong>");
+    html.append("<strong>").append(Utils.toHTML(text)).append("</strong>");
   }
   public void del(String text) {
     body.append("---").append(text).append("---");
-    html.append("<del>").append(Tools.toHTML(text)).append("</del>");
+    html.append("<del>").append(Utils.toHTML(text)).append("</del>");
   }
   public void raw(String f, String h) {
     body.append(f);
@@ -42,16 +42,16 @@ public class MxFmt {
   
   public void a(String text, String href) {
     body.append("[").append(text).append("](").append(href).append(")");
-    html.append("<a href=\"").append(Tools.toHTML(href)).append("\">").append(Tools.toHTML(text)).append("</a>");
+    html.append("<a href=\"").append(Utils.toHTML(href)).append("\">").append(Utils.toHTML(text)).append("</a>");
   }
   public void user(String uid, String nick) {
     body.append(nick);
-    html.append("<a href=\"https://matrix.to/#/").append(Tools.toHTML(uid)).append("\">").append(Tools.toHTML(nick)).append("</a>");
+    html.append("<a href=\"https://matrix.to/#/").append(Utils.toHTML(uid)).append("\">").append(Utils.toHTML(nick)).append("</a>");
   }
   
   public void c(String code) {
     body.append("`").append(code.replace("`","\\`")).append("`");
-    html.append("<code>").append(Tools.toHTML(code)).append("</code>");
+    html.append("<code>").append(Utils.toHTML(code)).append("</code>");
   }
   
   public void mc(String code, String lang) {
@@ -61,8 +61,8 @@ public class MxFmt {
     body.append("\n```\n");
     
     html.append("<pre><code");
-    if (lang!=null) html.append(" class=\"language-").append(Tools.toHTML(lang)).append("\"");
-    html.append(">").append(Tools.toHTML(code, false)).append("</code></pre>");
+    if (lang!=null) html.append(" class=\"language-").append(Utils.toHTML(lang)).append("\"");
+    html.append(">").append(Utils.toHTML(code, false)).append("</code></pre>");
   }
   
   
@@ -93,7 +93,7 @@ public class MxFmt {
   }
   public void a(MxFmt f, String href) {
     body.append("[").append(f.body).append("](").append(href).append(")");
-    html.append("<a href=\"").append(Tools.toHTML(href)).append("\">").append(f.html).append("</a>");
+    html.append("<a href=\"").append(Utils.toHTML(href)).append("\">").append(f.html).append("</a>");
   }
   
   
