@@ -7,6 +7,10 @@ https://homeserver.org
 password
 ```
 2. Clone dzaima/BQN in this directory
-2. Manually join the rooms where BQNBot should be in with its account
-3. `./build`
-4. `./run`
+3. Manually join the rooms where BQNBot should be in with its account
+4. Activate wasi, including `wasmtime` on path
+5. run `make -C path/to/dzaima/CBQN wasi-o3 OUTPUT="$PWD/CBQN"`
+6. `./build`
+7. `./run`
+
+(not doing steps 4 & 5 will result in only `dbqn` commands working)

@@ -8,6 +8,8 @@ import libMx.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -81,7 +83,7 @@ public class Main {
     }
   }
   void execBQN(String src, int mode) {
-    MxServer.log("BONBot", "Executing: ```");
+    MxServer.log("BONBot", "Executing mode "+mode+": ```");
     System.out.println(src);
     System.out.println("```");
     AtomicBoolean multiline = new AtomicBoolean(false);
@@ -89,33 +91,65 @@ public class Main {
     AtomicReference<String> resCode = new AtomicReference<>("");
     AtomicReference<String> resInfo = new AtomicReference<>("");
     Thread t = Utils.thread(() -> {
-      try {
-        SSys sys = new SSys();
+      if (mode>=3) {
+        StringBuilder rb = new StringBuilder();
         try {
-          BQN.Main.vind = false;
-          BQN.Main.debug = false;
-          BQN.Main.quotestrings = true;
-          StringBuilder rb = sys.rb;
-          Value prr = BQN.Main.exec(src, sys.gsc, null);
-          if (prr!=null && mode!=2) rb.append(mode==0? FmtInfo.fmt(prr.pretty(sys.fi)) : prr.ln(sys.fi));
-          truncate(multiline, resCode, rb);
-          done.set(true);
-        } catch (BQNError e) {
-          String em = e.getMessage();
-          if (em!=null) resInfo.set(e.getClass().getSimpleName()+": "+em);
-          else resInfo.set("Expression errored: "+e.getClass().getSimpleName());
-          truncate(multiline, resCode, sys.rb);
-          done.set(true);
-        } catch (Exception e) {
-          resInfo.set("Expression errored: "+e.getMessage());
-          truncate(multiline, resCode, sys.rb);
+          try {
+            ProcessBuilder b = new ProcessBuilder("wasmtime", "run", "CBQN", "--wasm-timeout", (TIMEOUT+2000)+"ms", "--", "-sM", "32");
+            Process p = b.start();
+            OutputStream os = p.getOutputStream();
+            os.write((mode==3? src : ")r "+src).getBytes(StandardCharsets.UTF_8));
+            os.flush();
+            os.close();
+            String stdout = new String(p.getInputStream().readAllBytes());
+            String stderr = new String(p.getErrorStream().readAllBytes());
+            rb.append(stdout);
+            if (stderr.length()>0) {
+              if (stdout.length()>0 && stdout.charAt(stdout.length()-1)!='\n') rb.append('\n');
+              rb.append(stderr);
+            }
+            p.waitFor();
+            truncate(multiline, resCode, rb);
+            done.set(true);
+          } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            resInfo.set("Failed to run CBQN");
+            truncate(multiline, resCode, rb);
+            done.set(true);
+          }
+        } catch (OutOfMemoryError e) {
+          resInfo.set("Took too much memory");
           done.set(true);
         }
-      } catch (OutOfMemoryError e) {
-        resInfo.set("Took too much memory");
-        done.set(true);
+      } else {
+        try {
+          SSys sys = new SSys();
+          try {
+            BQN.Main.vind = false;
+            BQN.Main.debug = false;
+            BQN.Main.quotestrings = true;
+            StringBuilder rb = sys.rb;
+            Value prr = BQN.Main.exec(src, sys.gsc, null);
+            if (prr!=null && mode!=2) rb.append(mode==0? FmtInfo.fmt(prr.pretty(sys.fi)) : prr.ln(sys.fi));
+            truncate(multiline, resCode, rb);
+            done.set(true);
+          } catch (BQNError e) {
+            String em = e.getMessage();
+            if (em!=null) resInfo.set(e.getClass().getSimpleName()+": "+em);
+            else resInfo.set("Expression errored: "+e.getClass().getSimpleName());
+            truncate(multiline, resCode, sys.rb);
+            done.set(true);
+          } catch (Exception e) {
+            resInfo.set("Expression errored: "+e.getMessage());
+            truncate(multiline, resCode, sys.rb);
+            done.set(true);
+          }
+        } catch (OutOfMemoryError e) {
+          resInfo.set("Took too much memory");
+          done.set(true);
+        }
       }
-    });
+    }, true);
     long sns = System.currentTimeMillis();
     String rc, ri;
     while (true) {
@@ -178,7 +212,7 @@ public class Main {
   class MsgReader {
     StringBuilder b = new StringBuilder();
     boolean cmd = false;
-    int mode; // 0 - pretty; 1 - repr; 2 - quiet
+    int mode; // 0 - dbqn pretty; 1 - dbqn repr; 2 - dbqn quiet; 3 - cbqn; 4 - cbqn quiet
     boolean done = false;
     boolean chk(String name, int mode) {
       int cl = name.length()+1;
@@ -193,7 +227,8 @@ public class Main {
       return false;
     }
     boolean checkCmd() {
-      return cmd || chk("bqn", 0) || chk("bqnr", 1) || chk("bqnq", 2);
+      return cmd         || chk( "bqn", 3) || chk( "bqnq", 4)
+      || chk("dbqnr", 1) || chk("dbqn", 0) || chk("dbqnq", 2);
     }
     void nl() {
       if (checkCmd()) b.append("\n");
