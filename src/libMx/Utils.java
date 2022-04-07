@@ -17,16 +17,7 @@ public class Utils {
   }
   
   public static String toHTML(String s) {
-    StringBuilder b = new StringBuilder(s.length());
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      if (c=='"' || c=='\'' || c=='&' || c=='<' || c=='>') {
-        b.append("&#").append((int) c).append(';');
-      } else if (c=='\n') {
-        b.append("<br>");
-      } else b.append(c);
-    }
-    return b.toString();
+    return toHTML(s, true);
   }
   public static String toHTML(String s, boolean nlToBr) {
     StringBuilder b = new StringBuilder(s.length());
@@ -64,6 +55,7 @@ public class Utils {
       URL u = new URL(path);
       HttpURLConnection c = (HttpURLConnection) u.openConnection();
       c.setConnectTimeout(globalTimeout);
+      c.setReadTimeout(globalTimeout);
       c.setRequestMethod(method);
       c.setUseCaches(false);
       c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -88,6 +80,7 @@ public class Utils {
       URL u = new URL(path);
       HttpURLConnection c = (HttpURLConnection) u.openConnection();
       c.setConnectTimeout(globalTimeout);
+      c.setReadTimeout(globalTimeout);
       c.setRequestMethod("GET");
       c.setUseCaches(false);
       
@@ -133,7 +126,7 @@ public class Utils {
       } catch (Exception e) {
         e.printStackTrace();
       }
-    });
+    }, false);
   }
   
   
@@ -147,8 +140,9 @@ public class Utils {
     return Arrays.copyOf(b, i);
   }
   
-  public static Thread thread(Runnable o) {
+  public static Thread thread(Runnable o, boolean daemon) {
     Thread th = new Thread(o);
+    th.setDaemon(daemon);
     th.start();
     return th;
   }

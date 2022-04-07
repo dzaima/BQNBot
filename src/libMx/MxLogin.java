@@ -25,14 +25,9 @@ public class MxLogin {
   public MxUser user() {
     return s.user(uid);
   }
-  public String sendMessage(MxRoom r, MxFmt msg) {
-    Obj j = s.postJ(
-      "_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token,
-      "{" +
-        (msg.replyId==null?"":"\"m.relates_to\":{\"m.in_reply_to\":{\"event_id\":"+Utils.toJSON(msg.replyId)+"}},") +
-        msg(msg.body.toString(), msg.html.toString()) +
-        "}"
-    );
+  public String sendMessage(MxRoom r, MxSendMsg msg) {
+    String ct = msg.msgJSON();
+    Obj j = s.postJ("_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token, ct);
     if (s.handleError(j, "send message")) return null;
     return j.str("event_id");
   }
@@ -42,16 +37,7 @@ public class MxLogin {
     return j.str("event_id");
   }
   public String editMessage(MxRoom r, String pid, MxFmt msg) { // ignores msg reply as reply target cannot be edited
-    String txt = msg.body.toString();
-    String htm = msg.html.toString();
-    Obj j = s.postJ(
-      "_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token,
-      "{" +
-        msg("* "+txt, "* "+htm)+"," +
-        "\"m.relates_to\":{\"rel_type\":\"m.replace\",\"event_id\":"+Utils.toJSON(pid)+"}," +
-        "\"m.new_content\":{"+msg(txt,htm)+"}" +
-        "}"
-    );
+    Obj j = s.postJ("_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token, msg.editJSON(pid));
     if (s.handleError(j, "edit message")) return null;
     return j.str("event_id");
   }
@@ -60,10 +46,6 @@ public class MxLogin {
     Obj j = s.putJ("_matrix/client/r0/rooms/"+r.rid+"/redact/"+pid+"/"+txn.getAndIncrement()+"?access_token="+token, "{}");
     s.handleError(j, "delete message");
   }
-  private String msg(String text, String html) {
-    return "\"msgtype\":\"m.text\", \"body\":"+Utils.toJSON(text)+",\"format\":\"org.matrix.custom.html\",\"formatted_body\":"+Utils.toJSON(html);
-  }
-  
   
   public String event(MxRoom r, String type, String data) {
     Obj j = s.putJ("_matrix/client/r0/rooms/"+r.rid+"/state/"+type+"?access_token="+token, data);

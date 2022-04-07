@@ -1,9 +1,14 @@
 package libMx;
 
-public class MxFmt {
+public class MxFmt extends MxSendMsg {
   public StringBuilder body;
   public StringBuilder html;
   String replyId;
+  public Type type = Type.TEXT;
+  public enum Type {
+    TEXT("m.text"), EMOTE("m.emote"), NOTICE("m.notice");
+    final String msgtype; Type(String msgtype) { this.msgtype = msgtype; }
+  }
   
   public MxFmt() {
      body = new StringBuilder();
@@ -14,9 +19,15 @@ public class MxFmt {
     this.html = new StringBuilder(html);
   }
   
-  public void reply(String mid) {
+  public void reply(MxRoom r, String mid) {
     assert replyId==null;
     replyId = mid;
+    html.insert(0, "<mx-reply><a href="+r.linkMsg(mid)+">↥</a> </mx-reply>");
+  }
+  public void reply(MxRoom r, String mid, String uid, String username) {
+    assert replyId==null;
+    replyId = mid;
+    html.insert(0, "<mx-reply><a href="+r.linkMsg(mid)+">↥</a> "+userHTML(uid, username)+" </mx-reply>");
   }
   
   public void txt(String text) {
@@ -44,9 +55,12 @@ public class MxFmt {
     body.append("[").append(text).append("](").append(href).append(")");
     html.append("<a href=\"").append(Utils.toHTML(href)).append("\">").append(Utils.toHTML(text)).append("</a>");
   }
+  public static String userHTML(String uid, String nick) {
+    return "<a href=\"https://matrix.to/#/"+Utils.toHTML(uid)+"\">"+Utils.toHTML(nick)+"</a>";
+  }
   public void user(String uid, String nick) {
     body.append(nick);
-    html.append("<a href=\"https://matrix.to/#/").append(Utils.toHTML(uid)).append("\">").append(Utils.toHTML(nick)).append("</a>");
+    html.append(userHTML(uid, nick));
   }
   
   public void c(String code) {
@@ -101,5 +115,24 @@ public class MxFmt {
     MxFmt f = new MxFmt();
     f.txt(s);
     return f;
+  }
+  
+  private String msg(String text, String html) {
+    return "\"msgtype\":\""+type.msgtype+"\", \"body\":"+Utils.toJSON(text)+",\"format\":\"org.matrix.custom.html\",\"formatted_body\":"+Utils.toJSON(html);
+  }
+  public String msgJSON() {
+    return "{" +
+      (replyId==null?"":"\"m.relates_to\":{\"m.in_reply_to\":{\"event_id\":"+Utils.toJSON(replyId)+"}},") +
+      msg(body.toString(), html.toString()) +
+    "}";
+  }
+  public String editJSON(String orig) {
+    String b = body.toString();
+    String h = html.toString();
+    return "{" +
+      msg("* "+b, "* "+h)+"," +
+      "\"m.relates_to\":{\"rel_type\":\"m.replace\",\"event_id\":"+Utils.toJSON(orig)+"}," +
+      "\"m.new_content\":{"+msg(b,h)+"}" +
+    "}";
   }
 }

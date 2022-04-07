@@ -116,7 +116,7 @@ public class MxServer {
       failTime = Math.min(Math.max(failTime*2, 1), 180);
     }
   }
-  private String postRaw(String path, String data) {
+  public String postRaw(String path, String data) {
     log("POST", path, data);
     return Utils.post(url+"/"+path, data.getBytes(StandardCharsets.UTF_8));
   }
@@ -228,4 +228,9 @@ public class MxServer {
     System.err.println("["+LocalDateTime.now()+" !!] "+s);
   }
   public static boolean LOG = true;
+  
+  public String mxcToURL(String mxc) {
+    if (!mxc.startsWith("mxc://")) throw new RuntimeException("not an mxc URL: "+mxc);
+    return url+"/_matrix/media/r0/download/"+mxc.substring(6);
+  }
 }
