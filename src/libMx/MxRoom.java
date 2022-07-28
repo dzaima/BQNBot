@@ -33,7 +33,7 @@ public class MxRoom {
     public final ArrayList<MxEvent> events;
     public final String sTok;
     public final String eTok; // token for next batch
-  
+    
     public Chunk(ArrayList<MxEvent> events, String sTok, String eTok) { this.events = events; this.sTok = sTok; this.eTok = eTok; }
   }
   public Chunk beforeTok(String from, int am) { return beforeTok(from, null, am); }
@@ -47,7 +47,7 @@ public class MxRoom {
       res.add(new MxEvent(this, c));
     }
     if (d=='b') Collections.reverse(res);
-    return new Chunk(res, o.str("start"), o.str("end"));
+    return new Chunk(res, o.str("start"), o.str("end", null));
   }
   
   public Chunk msgContext(String id, int am) {
@@ -66,7 +66,10 @@ public class MxRoom {
   }
   
   
+  public String link() {
+    return "https://matrix.to/#/"+rid;
+  }
   public String linkMsg(String mid) {
-    return "https://matrix.to/#/"+rid+"/"+mid;
+    return link()+"/"+mid;
   }
 }
