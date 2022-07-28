@@ -236,7 +236,11 @@ public class Main {
     }
     void end() {
       if (checkCmd() && !done) {
-        execBQN(b.toString(), mode);
+        String src = b.toString().replaceAll("\\n+", "\n");
+        int s=0, e=src.length();
+        while (s<src.length() && src.charAt(s)=='\n') s++;
+        while (e>0 && src.charAt(e-1)=='\n') e--;
+        execBQN(src.substring(s, e), mode);
         done = true;
       }
     }
